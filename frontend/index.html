@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Tracker</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f7fb;
+        --panel: #ffffff;
+        --border: #d9e2ec;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --todo: #e0f2fe;
+        --in-progress: #fef3c7;
+        --done: #dcfce7;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      .header {
+        margin-bottom: 24px;
+      }
+
+      .header h1 {
+        margin: 0 0 8px;
+        font-size: 2rem;
+      }
+
+      .header p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .column {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        min-height: 320px;
+      }
+
+      .column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .column-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+
+      .column-count {
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      .card {
+        background: #fbfdff;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 12px;
+      }
+
+      .card-title {
+        font-weight: 700;
+        margin: 0 0 6px;
+      }
+
+      .card-description {
+        margin: 0 0 10px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .card-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: var(--muted);
+        margin-bottom: 10px;
+      }
+
+      .card-actions {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .card.dragging {
+        opacity: 0.65;
+      }
+
+      .column.drag-over {
+        outline: 2px dashed #60a5fa;
+        outline-offset: 4px;
+        background: #eff6ff;
+      }
+
+      .board-feedback {
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #d9e2ec;
+        color: #374151;
+        background: #f9fafb;
+      }
+
+      .board-feedback.error {
+        color: #b91c1c;
+        background: #fef2f2;
+        border-color: #fecaca;
+      }
+
+      .edit-button {
+        border: 1px solid var(--border);
+        background: white;
+        color: var(--text);
+        border-radius: 6px;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+
+      .edit-button:hover {
+        background: #f3f4f6;
+      }
+
+      .column[data-status="ToDo"] {
+        background: linear-gradient(180deg, var(--todo) 0%, var(--panel) 80%);
+      }
+
+      .column[data-status="InProgress"] {
+        background: linear-gradient(180deg, var(--in-progress) 0%, var(--panel) 80%);
+      }
+
+      .column[data-status="Done"] {
+        background: linear-gradient(180deg, var(--done) 0%, var(--panel) 80%);
+      }
+
+      @media (max-width: 800px) {
+        .board {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="header">
+        <h1>Task Tracker</h1>
+        <p>Keep work moving from planning to completion.</p>
+      </header>
+
+      <section class="board" aria-label="Task board">
+        <section class="column" data-status="ToDo">
+          <div class="column-header">
+            <h2 class="column-title">To Do</h2>
+            <span class="column-count">1</span>
+          </div>
+
+          <article class="card" data-task-id="task-1">
+            <h3 class="card-title">Draft project plan</h3>
+            <p class="card-description">Outline milestones and key deliverables.</p>
+            <div class="card-meta">
+              <span>Priority: High</span>
+              <span>Assignee: Alex</span>
+            </div>
+            <div class="card-actions">
+              <button class="edit-button" type="button">Edit</button>
+            </div>
+          </article>
+        </section>
+
+        <section class="column" data-status="InProgress">
+          <div class="column-header">
+            <h2 class="column-title">In Progress</h2>
+            <span class="column-count">1</span>
+          </div>
+
+          <article class="card" data-task-id="task-2">
+            <h3 class="card-title">Build API endpoints</h3>
+            <p class="card-description">Implement CRUD routes for task management.</p>
+            <div class="card-meta">
+              <span>Priority: Medium</span>
+              <span>Assignee: Sam</span>
+            </div>
+            <div class="card-actions">
+              <button class="edit-button" type="button">Edit</button>
+            </div>
+          </article>
+        </section>
+
+        <section class="column" data-status="Done">
+          <div class="column-header">
+            <h2 class="column-title">Done</h2>
+            <span class="column-count">1</span>
+          </div>
+
+          <article class="card" data-task-id="task-3">
+            <h3 class="card-title">Set up repository</h3>
+            <p class="card-description">Initialize the task tracker project structure.</p>
+            <div class="card-meta">
+              <span>Priority: Low</span>
+              <span>Assignee: Unassigned</span>
+            </div>
+            <div class="card-actions">
+              <button class="edit-button" type="button">Edit</button>
+            </div>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      // Changes: Add UI state handling (loading/ready/empty/error), a top-level
+      // state container, Retry action, and empty-column placeholders while
+      // preserving existing sorting and status values.
+      const BASE_URL = "http://localhost:8000";
+      const STATUS_ORDER = ["ToDo", "InProgress", "Done"];
+      const PRIORITY_ORDER = { High: 0, Medium: 1, Low: 2 };
+      let tasks = [];
+      let state = "loading"; // loading | ready | empty | error
+      let draggedTaskId = null;
+      let draggedTaskPreviousStatus = null;
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function sortTasks(tasksToSort) {
+        return [...tasksToSort].sort((left, right) => {
+          const priorityDifference = (PRIORITY_ORDER[left.priority] ?? 99) - (PRIORITY_ORDER[right.priority] ?? 99);
+          if (priorityDifference !== 0) {
+            return priorityDifference;
+          }
+          return String(left.id).localeCompare(String(right.id), undefined, {
+            numeric: true,
+            sensitivity: "base",
+          });
+        });
+      }
+
+      // UI state helpers
+      function ensureStateContainer() {
+        let container = document.querySelector("#board-state");
+        if (!container) {
+          container = document.createElement("div");
+          container.id = "board-state";
+          container.style.margin = "0 0 12px 0";
+          const board = document.querySelector(".board");
+          board.parentNode.insertBefore(container, board);
+        }
+        return container;
+      }
+
+      function setState(newState, info) {
+        state = newState;
+        const container = ensureStateContainer();
+        container.innerHTML = "";
+
+        if (state === "loading") {
+          const el = document.createElement("div");
+          el.textContent = "Loading tasks...";
+          el.setAttribute("role", "status");
+          el.style.color = "#374151";
+          container.appendChild(el);
+          return;
+        }
+
+        if (state === "error") {
+          const el = document.createElement("div");
+          el.style.display = "flex";
+          el.style.justifyContent = "space-between";
+          el.style.alignItems = "center";
+          el.style.gap = "12px";
+
+          const msg = document.createElement("div");
+          msg.textContent = info?.message || "Unable to load tasks.";
+          msg.style.color = "#b91c1c";
+
+          const retry = document.createElement("button");
+          retry.textContent = "Retry";
+          retry.className = "edit-button";
+          retry.addEventListener("click", () => {
+            fetchTasks();
+          });
+
+          el.appendChild(msg);
+          el.appendChild(retry);
+          container.appendChild(el);
+          return;
+        }
+
+        if (info?.message) {
+          const el = document.createElement("div");
+          el.className = `board-feedback ${info.type === "error" ? "error" : ""}`;
+          el.textContent = info.message;
+          container.appendChild(el);
+        }
+      }
+
+      function clearDragState() {
+        document.querySelectorAll(".column").forEach((column) => column.classList.remove("drag-over"));
+        document.querySelectorAll(".card.dragging").forEach((card) => card.classList.remove("dragging"));
+        draggedTaskId = null;
+        draggedTaskPreviousStatus = null;
+      }
+
+      async function updateTaskStatus(taskId, targetStatus, previousStatus) {
+        const task = tasks.find((item) => String(item.id) === String(taskId));
+        if (!task) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`${BASE_URL}/tasks/${taskId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: targetStatus }),
+          });
+
+          if (!response.ok) {
+            task.status = previousStatus;
+            renderBoard(tasks);
+            const errorPayload = await response.json().catch(() => null);
+            const message = errorPayload?.detail || `Unable to move task. Server replied with ${response.status}.`;
+            setState(tasks.length === 0 ? "empty" : "ready", { message, type: "error" });
+            return;
+          }
+
+          setState(tasks.length === 0 ? "empty" : "ready");
+        } catch (error) {
+          task.status = previousStatus;
+          renderBoard(tasks);
+          setState(tasks.length === 0 ? "empty" : "ready", {
+            message: "Unable to move task right now. Please try again.",
+            type: "error",
+          });
+        }
+      }
+
+      function handleCardDragStart(event) {
+        const card = event.target.closest(".card");
+        if (!card) {
+          return;
+        }
+
+        const taskId = card.dataset.taskId;
+        const task = tasks.find((item) => String(item.id) === String(taskId));
+        if (!task) {
+          return;
+        }
+
+        draggedTaskId = taskId;
+        draggedTaskPreviousStatus = task.status;
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", taskId);
+        card.classList.add("dragging");
+      }
+
+      function handleColumnDragOver(event) {
+        const column = event.target.closest(".column");
+        if (!column || !draggedTaskId) {
+          return;
+        }
+
+        event.preventDefault();
+        document.querySelectorAll(".column").forEach((item) => item.classList.remove("drag-over"));
+        column.classList.add("drag-over");
+      }
+
+      function handleCardDrop(event) {
+        const column = event.target.closest(".column");
+        if (!column || !draggedTaskId) {
+          clearDragState();
+          return;
+        }
+
+        event.preventDefault();
+        const targetStatus = column.dataset.status;
+        const task = tasks.find((item) => String(item.id) === String(draggedTaskId));
+        if (!task) {
+          clearDragState();
+          return;
+        }
+
+        if (task.status === targetStatus) {
+          clearDragState();
+          return;
+        }
+
+        const previousStatus = task.status;
+        task.status = targetStatus;
+        renderBoard(tasks);
+        setState(tasks.length === 0 ? "empty" : "ready");
+        updateTaskStatus(draggedTaskId, targetStatus, previousStatus);
+        clearDragState();
+      }
+
+      function renderBoard(tasksToRender) {
+        const groupedTasks = new Map(STATUS_ORDER.map((status) => [status, []]));
+
+        tasksToRender.forEach((task) => {
+          if (groupedTasks.has(task.status)) {
+            groupedTasks.get(task.status).push(task);
+          }
+        });
+
+        // NOTE: top-level UI state (loading/ready/empty/error) is managed by caller
+        // renderBoard only updates columns, counts, cards, and placeholders.
+
+        STATUS_ORDER.forEach((status) => {
+          const column = document.querySelector(`.column[data-status="${status}"]`);
+          if (!column) return;
+
+          const count = column.querySelector(".column-count");
+          if (count) count.textContent = String(groupedTasks.get(status).length);
+
+          // remove existing generated cards, placeholders, and any stray direct .card elements
+          column.querySelectorAll(":scope > .card, .column-cards, .empty-placeholder").forEach((n) => n.remove());
+
+          const cardsContainer = document.createElement("div");
+          cardsContainer.className = "column-cards";
+
+          const items = sortTasks(groupedTasks.get(status));
+          if (items.length === 0) {
+            const placeholder = document.createElement("div");
+            placeholder.className = "empty-placeholder";
+            placeholder.textContent = "No tasks";
+            placeholder.style.padding = "12px";
+            placeholder.style.border = "1px dashed #d9e2ec";
+            placeholder.style.borderRadius = "8px";
+            placeholder.style.color = "#6b7280";
+            placeholder.style.textAlign = "center";
+            placeholder.style.minHeight = "48px";
+            column.appendChild(placeholder);
+          } else {
+            items.forEach((task) => {
+              const card = document.createElement("article");
+              card.className = "card";
+              card.dataset.taskId = task.id;
+              card.draggable = true;
+
+              const assigneeText = task.assignee ? escapeHtml(task.assignee) : "Unassigned";
+              card.innerHTML = `
+                <h3 class="card-title">${escapeHtml(task.title)}</h3>
+                <p class="card-description">${escapeHtml(task.description || "")}</p>
+                <div class="card-meta">
+                  <span>Priority: ${escapeHtml(task.priority)}</span>
+                  <span>Assignee: ${assigneeText}</span>
+                </div>
+                <div class="card-actions">
+                  <button class="edit-button" type="button">Edit</button>
+                </div>
+              `;
+
+              cardsContainer.appendChild(card);
+            });
+            column.appendChild(cardsContainer);
+          }
+        });
+      }
+
+      async function fetchTasks() {
+        setState("loading");
+        try {
+          const response = await fetch(`${BASE_URL}/tasks`);
+          if (!response.ok) {
+            throw new Error(`Request failed with status ${response.status}`);
+          }
+
+          const data = await response.json();
+          tasks = Array.isArray(data) ? data : [];
+          // Caller decides global state (ready vs empty), then render columns
+          setState(tasks.length === 0 ? "empty" : "ready");
+          renderBoard(tasks);
+          return tasks;
+        } catch (error) {
+          console.error("Unable to load tasks", error);
+          tasks = [];
+          setState("error", { message: error?.message });
+          renderBoard(tasks); // still render empty board
+          return tasks;
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const board = document.querySelector(".board");
+        if (board) {
+          board.addEventListener("dragstart", handleCardDragStart);
+          board.addEventListener("dragover", handleColumnDragOver);
+          board.addEventListener("drop", handleCardDrop);
+          board.addEventListener("dragend", () => {
+            clearDragState();
+          });
+        }
+
+        // initialize empty board then load
+        renderBoard(tasks);
+        fetchTasks();
+      });
+    </script>
+  </body>
+</html>
