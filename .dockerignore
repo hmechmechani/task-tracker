@@ -4,7 +4,6 @@
 venv/
 .venv/
 __pycache__/
-**/__pycache__/
 *.pyc
 .pytest_cache/
 node_modules/
@@ -15,3 +14,6 @@ build/
 Thumbs.db
 .vscode/
 .idea/
+tests/
+docs/
+frontend/
