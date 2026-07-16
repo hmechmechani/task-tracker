@@ -1,10 +1,6 @@
-# Task Tracker API (Module 1 skeleton)
+# Task Tracker
 
-Minimal FastAPI foundation for the AI-Assisted Coding course Task Tracker project.
-
-## Scope (Module 1)
-This is a skeleton only: one `/health` endpoint. No CRUD, no auth, no database.
-Full CRUD, data models, and business logic are added in Module 2.
+FastAPI backend + static-HTML frontend for the AI-Assisted Coding course Task Tracker project. Full CRUD, due dates with an overdue filter, tags/labels, and a Kanban-style drag-and-drop board.
 
 ## Setup
 
@@ -16,9 +12,22 @@ pip install -r requirements.txt
 
 ## Run
 
+### Backend
 ```bash
 uvicorn app.main:app --reload
 ```
+API runs at `http://127.0.0.1:8000` (docs at `/docs`).
+
+### Frontend
+The backend's CORS policy (see `app/main.py`) only allows requests from `http://127.0.0.1:5500` and `http://localhost:5500`, so `frontend/index.html` must be served from one of those origins — opening the file directly in a browser (`file://`) will not work.
+
+1. From the `frontend/` directory, serve it on port 5500:
+   ```bash
+   cd frontend
+   python -m http.server 5500
+   ```
+   (or any equivalent local server on that port/origin, e.g. the VS Code "Live Server" extension, which defaults to port 5500)
+2. Open `http://127.0.0.1:5500` (or `http://localhost:5500`) in a browser, with the backend already running.
 
 ## Verify
 
@@ -26,27 +35,19 @@ uvicorn app.main:app --reload
 curl http://localhost:8000/health
 ```
 
-Expected response:
+Example response (timestamp varies per request):
 ```json
 {"status": "ok", "timestamp": "2026-07-12T12:00:00.000000+00:00"}
 ```
 
 Swagger docs: open http://localhost:8000/docs in a browser.
 
-## Running the project
+## Tests
 
-### Backend
-1. From the project root: `pip install -r requirements.txt`
-2. Start the API: `uvicorn app.main:app --reload`
-3. API runs at `http://127.0.0.1:8000` (docs at `/docs`).
-
-### Frontend
-1. Open `frontend/index.html` directly in a browser (double-click, or right-click → Open With), with the backend already running.
-2. No build step or server needed — it's a single static file that calls the backend API directly.
-
-### Tests
-1. From the project root: `pytest`
-2. Expect 28 passed.
+```bash
+pytest -v
+```
+Expect 28 passed.
 
 ## Mid-course project docs
 See `docs/midcourse/` for user stories, the mini-ADR, the AI prompt log, verification evidence, and the reflection for this checkpoint.
