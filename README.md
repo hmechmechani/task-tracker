@@ -32,3 +32,21 @@ Expected response:
 ```
 
 Swagger docs: open http://localhost:8000/docs in a browser.
+
+## Running the project
+
+### Backend
+1. From the project root: `pip install -r requirements.txt`
+2. Start the API: `uvicorn app.main:app --reload`
+3. API runs at `http://127.0.0.1:8000` (docs at `/docs`).
+
+### Frontend
+1. Open `frontend/index.html` directly in a browser (double-click, or right-click → Open With), with the backend already running.
+2. No build step or server needed — it's a single static file that calls the backend API directly.
+
+### Tests
+1. From the project root: `pytest`
+2. Expect 28 passed.
+
+## Mid-course project docs
+See `docs/midcourse/` for user stories, the mini-ADR, the AI prompt log, verification evidence, and the reflection for this checkpoint.
