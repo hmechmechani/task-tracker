@@ -144,6 +144,37 @@
         border-color: #fecaca;
       }
 
+      .overdue-badge {
+        display: inline-block;
+        margin-top: 8px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+
+      .tag-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .tag-chip {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid #bfdbfe;
+        background: #eff6ff;
+        color: #1e3a8a;
+        font-size: 0.78rem;
+        font-weight: 600;
+        line-height: 1.2;
+      }
+
       .edit-button {
         border: 1px solid var(--border);
         background: white;
@@ -314,6 +345,16 @@
           </div>
 
           <div class="form-field">
+            <label for="task-due-date">Due date</label>
+            <input id="task-due-date" name="due_date" type="date" />
+          </div>
+
+          <div class="form-field">
+            <label for="task-tags">Tags (comma-separated)</label>
+            <input id="task-tags" name="tags" type="text" />
+          </div>
+
+          <div class="form-field">
             <label for="task-assignee">Assignee</label>
             <input id="task-assignee" name="assignee" type="text" />
           </div>
@@ -334,7 +375,14 @@
           <h1>Task Tracker</h1>
           <p>Keep work moving from planning to completion.</p>
         </div>
-        <button class="edit-button" id="new-task-button" type="button">New Task</button>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <input id="tag-filter" type="text" placeholder="Filter by tag" />
+          <label for="show-overdue-only" style="display: flex; align-items: center; gap: 6px; color: var(--text);">
+            <input id="show-overdue-only" type="checkbox" />
+            <span>Show overdue only</span>
+          </label>
+          <button class="edit-button" id="new-task-button" type="button">New Task</button>
+        </div>
       </header>
 
       <section class="board" aria-label="Task board">
@@ -411,6 +459,8 @@
       let modalMode = "create";
       let activeTaskId = null;
       let originalTaskStatus = null;
+      let showOverdueOnly = false;
+      let tagFilter = "";
 
       function escapeHtml(value) {
         return String(value ?? "")
@@ -523,6 +573,8 @@
         const descriptionInput = document.getElementById("task-description");
         const statusInput = document.getElementById("task-status");
         const priorityInput = document.getElementById("task-priority");
+        const dueDateInput = document.getElementById("task-due-date");
+        const tagsInput = document.getElementById("task-tags");
         const assigneeInput = document.getElementById("task-assignee");
 
         clearModalErrors();
@@ -534,6 +586,8 @@
           descriptionInput.value = task.description || "";
           statusInput.value = task.status || "ToDo";
           priorityInput.value = task.priority || "Medium";
+          dueDateInput.value = task.due_date || "";
+          tagsInput.value = Array.isArray(task.tags) ? task.tags.join(", ") : "";
           assigneeInput.value = task.assignee || "";
         } else {
           title.textContent = "New Task";
@@ -541,6 +595,8 @@
           form.reset();
           statusInput.value = "ToDo";
           priorityInput.value = "Medium";
+          dueDateInput.value = "";
+          tagsInput.value = "";
           assigneeInput.value = "";
           titleInput.value = "";
           descriptionInput.value = "";
@@ -566,6 +622,8 @@
           form.reset();
           document.getElementById("task-status").value = "ToDo";
           document.getElementById("task-priority").value = "Medium";
+          document.getElementById("task-due-date").value = "";
+          document.getElementById("task-tags").value = "";
         }
       }
 
@@ -606,6 +664,14 @@
           priority: form.elements.priority.value,
           assignee: form.elements.assignee.value.trim() ? form.elements.assignee.value.trim() : null,
         };
+
+        payload.tags = form.elements.tags.value
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter((tag) => tag.length > 0);
+
+        const dueDateValue = form.elements.due_date.value;
+        payload.due_date = dueDateValue ? dueDateValue : null;
 
         const isEdit = modalMode === "edit" && activeTaskId;
         if (isEdit) {
@@ -735,6 +801,38 @@
         clearDragState();
       }
 
+      function renderCard(task) {
+        const card = document.createElement("article");
+        card.className = "card";
+        card.dataset.taskId = task.id;
+        card.draggable = true;
+
+        const assigneeText = task.assignee ? escapeHtml(task.assignee) : "Unassigned";
+        const dueDateText = task.due_date ? escapeHtml(task.due_date) : "";
+        const tags = Array.isArray(task.tags) ? task.tags.filter((tag) => String(tag).trim().length > 0) : [];
+        const tagsLine = tags.length
+          ? `<div class="tag-chips">${tags.map((tag) => `<span class="tag-chip">${escapeHtml(tag)}</span>`).join("")}</div>`
+          : "";
+        const overdueBadge = task.is_overdue ? '<span class="overdue-badge">Overdue</span>' : "";
+        const dueDateLine = dueDateText ? `<div class="card-meta"><span>Due: ${dueDateText}</span><span></span></div>` : "";
+        card.innerHTML = `
+          <h3 class="card-title">${escapeHtml(task.title)}</h3>
+          <p class="card-description">${escapeHtml(task.description || "")}</p>
+          <div class="card-meta">
+            <span>Priority: ${escapeHtml(task.priority)}</span>
+            <span>Assignee: ${assigneeText}</span>
+          </div>
+          ${dueDateLine}
+          ${tagsLine}
+          ${overdueBadge}
+          <div class="card-actions">
+            <button class="edit-button" type="button" data-action="edit-task" data-task-id="${escapeHtml(task.id)}">Edit</button>
+          </div>
+        `;
+
+        return card;
+      }
+
       function renderBoard(tasksToRender) {
         const groupedTasks = new Map(STATUS_ORDER.map((status) => [status, []]));
 
@@ -774,25 +872,7 @@
             column.appendChild(placeholder);
           } else {
             items.forEach((task) => {
-              const card = document.createElement("article");
-              card.className = "card";
-              card.dataset.taskId = task.id;
-              card.draggable = true;
-
-              const assigneeText = task.assignee ? escapeHtml(task.assignee) : "Unassigned";
-              card.innerHTML = `
-                <h3 class="card-title">${escapeHtml(task.title)}</h3>
-                <p class="card-description">${escapeHtml(task.description || "")}</p>
-                <div class="card-meta">
-                  <span>Priority: ${escapeHtml(task.priority)}</span>
-                  <span>Assignee: ${assigneeText}</span>
-                </div>
-                <div class="card-actions">
-                  <button class="edit-button" type="button" data-action="edit-task" data-task-id="${escapeHtml(task.id)}">Edit</button>
-                </div>
-              `;
-
-              cardsContainer.appendChild(card);
+              cardsContainer.appendChild(renderCard(task));
             });
             column.appendChild(cardsContainer);
           }
@@ -802,7 +882,15 @@
       async function fetchTasks() {
         setState("loading");
         try {
-          const response = await fetch(`${BASE_URL}/tasks`);
+          const params = new URLSearchParams();
+          if (showOverdueOnly) {
+            params.set("overdue", "true");
+          }
+          if (tagFilter) {
+            params.set("tag", tagFilter);
+          }
+          const query = params.toString();
+          const response = await fetch(`${BASE_URL}/tasks${query ? `?${query}` : ""}`);
           if (!response.ok) {
             throw new Error(`Request failed with status ${response.status}`);
           }
@@ -827,6 +915,8 @@
         const modal = document.getElementById("task-modal");
         const newTaskButton = document.getElementById("new-task-button");
         const taskForm = document.getElementById("task-form");
+        const tagFilterInput = document.getElementById("tag-filter");
+        const overdueFilter = document.getElementById("show-overdue-only");
 
         if (board) {
           board.addEventListener("dragstart", handleCardDragStart);
@@ -854,6 +944,20 @@
 
         if (taskForm) {
           taskForm.addEventListener("submit", submitTaskForm);
+        }
+
+        if (overdueFilter) {
+          overdueFilter.addEventListener("change", () => {
+            showOverdueOnly = overdueFilter.checked;
+            fetchTasks();
+          });
+        }
+
+        if (tagFilterInput) {
+          tagFilterInput.addEventListener("change", () => {
+            tagFilter = tagFilterInput.value.trim();
+            fetchTasks();
+          });
         }
 
         if (modal) {

@@ -1,3 +1,9 @@
+from datetime import date
+
+from app.business_rules import is_task_overdue
+from app.models import TaskStatus
+
+
 def test_create_task_valid_returns_201_with_full_body(client):
     response = client.post(
         "/tasks",
@@ -22,6 +28,25 @@ def test_create_task_valid_returns_201_with_full_body(client):
     assert "updated_at" in body
 
 
+def test_is_task_overdue_recomputes_based_on_current_date():
+    due_date = date(2020, 1, 1)
+
+    assert is_task_overdue(due_date, TaskStatus.TODO, today=date(2019, 12, 31)) is False
+    assert is_task_overdue(due_date, TaskStatus.TODO, today=date(2020, 1, 2)) is True
+
+
+def test_create_task_invalid_due_date_returns_422(client):
+    response = client.post(
+        "/tasks",
+        json={
+            "title": "Bad due date",
+            "due_date": "not-a-date",
+        },
+    )
+
+    assert response.status_code == 422
+
+
 def test_create_task_missing_title_returns_422(client):
     response = client.post("/tasks", json={"description": "no title"})
 
@@ -44,6 +69,35 @@ def test_create_task_unknown_field_returns_422(client):
     response = client.post("/tasks", json={"title": "Valid title", "unknown": "field"})
 
     assert response.status_code == 422
+
+
+def test_create_task_with_tags_returns_201_and_trims_tags(client):
+    response = client.post(
+        "/tasks",
+        json={"title": "Tagged task", "tags": ["  urgent ", "review", " urgent "]},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["tags"] == ["urgent", "review", "urgent"]
+
+
+def test_create_task_with_empty_tag_returns_422(client):
+    response = client.post("/tasks", json={"title": "Bad tag task", "tags": ["alpha", "   "]})
+
+    assert response.status_code == 422
+
+
+def test_list_tasks_filter_by_tag_returns_only_matches(client):
+    client.post("/tasks", json={"title": "Urgent task", "tags": ["urgent"]})
+    client.post("/tasks", json={"title": "Also urgent", "tags": ["review", "urgent"]})
+    client.post("/tasks", json={"title": "Review task", "tags": ["review"]})
+
+    response = client.get("/tasks", params={"tag": "urgent"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [task["title"] for task in body] == ["Urgent task", "Also urgent"]
 
 
 def test_list_tasks_empty_returns_200_and_empty_list(client):
@@ -140,6 +194,93 @@ def test_patch_same_status_returns_422(client, created_task):
     assert response.status_code == 422
 
 
+def test_patch_update_due_date_recomputes_is_overdue(client, created_task):
+    response = client.patch(
+        f"/tasks/{created_task['id']}",
+        json={"due_date": "2099-01-01"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["due_date"] == "2099-01-01"
+    assert response.json()["is_overdue"] is False
+
+    response = client.patch(
+        f"/tasks/{created_task['id']}",
+        json={"due_date": "2000-01-01"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["due_date"] == "2000-01-01"
+    assert response.json()["is_overdue"] is True
+
+
+def test_patch_update_tags_returns_200(client, created_task):
+    response = client.patch(
+        f"/tasks/{created_task['id']}",
+        json={"tags": ["urgent", "review"]},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["tags"] == ["urgent", "review"]
+
+
+def test_patch_unrelated_field_preserves_tags(client):
+    created = client.post(
+        "/tasks",
+        json={"title": "Tagged task", "tags": ["urgent", "review"]},
+    )
+
+    response = client.patch(
+        f"/tasks/{created.json()['id']}",
+        json={"title": "Updated title"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["tags"] == ["urgent", "review"]
+
+
+def test_create_task_with_due_date_returns_201_and_computes_overdue(client):
+    response = client.post(
+        "/tasks",
+        json={
+            "title": "Due soon",
+            "status": "ToDo",
+            "due_date": "2020-01-01",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["due_date"] == "2020-01-01"
+    assert body["is_overdue"] is True
+
+
+def test_list_tasks_overdue_filter_returns_only_overdue_tasks(client):
+    client.post(
+        "/tasks",
+        json={
+            "title": "Overdue task",
+            "status": "ToDo",
+            "due_date": "2020-01-01",
+        },
+    )
+    client.post(
+        "/tasks",
+        json={
+            "title": "Not overdue task",
+            "status": "ToDo",
+            "due_date": "2099-01-01",
+        },
+    )
+
+    response = client.get("/tasks", params={"overdue": True})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["title"] == "Overdue task"
+
+
 def test_delete_existing_returns_204_no_body(client, created_task):
     response = client.delete(f"/tasks/{created_task['id']}")
 
@@ -153,3 +294,21 @@ def test_delete_missing_returns_404(client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == f"Task with id {missing_id} not found"
+
+def test_patch_invalid_transition_inprogress_to_todo_returns_422(client):
+    created_task = client.post(
+        "/tasks",
+        json={
+            "title": "In progress task",
+            "description": "A task that should not move backwards",
+            "status": "InProgress",
+            "priority": "Medium",
+            "assignee": "Bob",
+        },
+    )
+    response = client.patch(
+        f"/tasks/{created_task.json()['id']}",
+        json={"status": "ToDo"},
+    )
+    assert response.status_code == 422
+    assert "Invalid status transition" in response.json()["detail"]
