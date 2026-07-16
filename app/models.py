@@ -54,6 +54,23 @@ class TaskCreate(BaseModel):
     @field_validator("title", mode="before")
     @classmethod
     def validate_title(cls, value: object) -> object:
+        """Normalize and validate the title field before model construction.
+
+        Args:
+            value (object): Raw input value for title.
+
+        Returns:
+            object: The stripped title string, or the original value
+                unchanged if it is None. [VERIFY] title is a required field
+                on TaskCreate, so a None or omitted value is expected to
+                fail Pydantic's own required-field check separately from
+                this validator.
+
+        Raises:
+            TypeError: If value is not a string.
+            ValueError: If the stripped value is blank, or exceeds 200
+                characters.
+        """
         if value is None:
             return value
         if not isinstance(value, str):
@@ -69,6 +86,22 @@ class TaskCreate(BaseModel):
     @field_validator("tags", mode="before")
     @classmethod
     def validate_tags(cls, value: object) -> object:
+        """Normalize and validate the tags field before model construction.
+
+        Delegates to the module-level _validate_tags helper.
+
+        Args:
+            value (object): Raw input value for tags.
+
+        Returns:
+            object: value unchanged if None, otherwise a list of trimmed
+                tag strings.
+
+        Raises:
+            TypeError: If value is not a list of strings.
+            ValueError: If more than 5 tags are given, any tag is blank
+                after trimming, or any tag exceeds 30 characters.
+        """
         return _validate_tags(value)
 
 
@@ -86,6 +119,21 @@ class TaskUpdate(BaseModel):
     @field_validator("title", mode="before")
     @classmethod
     def validate_title(cls, value: object) -> object:
+        """Normalize and validate the title field before model construction.
+
+        Args:
+            value (object): Raw input value for title.
+
+        Returns:
+            object: The stripped title string, or None unchanged if value
+                is None (title is optional on TaskUpdate, so None means
+                "no change requested" upstream via exclude_unset).
+
+        Raises:
+            TypeError: If value is not a string.
+            ValueError: If the stripped value is blank, or exceeds 200
+                characters.
+        """
         if value is None:
             return value
         if not isinstance(value, str):
@@ -101,6 +149,22 @@ class TaskUpdate(BaseModel):
     @field_validator("tags", mode="before")
     @classmethod
     def validate_tags(cls, value: object) -> object:
+        """Normalize and validate the tags field before model construction.
+
+        Delegates to the module-level _validate_tags helper.
+
+        Args:
+            value (object): Raw input value for tags.
+
+        Returns:
+            object: value unchanged if None, otherwise a list of trimmed
+                tag strings.
+
+        Raises:
+            TypeError: If value is not a list of strings.
+            ValueError: If more than 5 tags are given, any tag is blank
+                after trimming, or any tag exceeds 30 characters.
+        """
         return _validate_tags(value)
 
 
