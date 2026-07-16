@@ -66,8 +66,7 @@ def update_task(task_id: str, payload: TaskUpdate) -> Optional[TaskResponse]:
     if not update_data:
         return _hydrate_task(task)
 
-    if "due_date" in update_data or "status" in update_data:
-        update_data["is_overdue"] = is_task_overdue(update_data.get("due_date"), update_data.get("status", task.status))
+
 
     updated_task = task.model_copy(update={**update_data, "updated_at": datetime.now(timezone.utc)})
     _tasks[task_id] = updated_task
