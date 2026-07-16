@@ -29,6 +29,25 @@ The backend's CORS policy (see `app/main.py`) only allows requests from `http://
    (or any equivalent local server on that port/origin, e.g. the VS Code "Live Server" extension, which defaults to port 5500)
 2. Open `http://127.0.0.1:5500` (or `http://localhost:5500`) in a browser, with the backend already running.
 
+## Run with Docker
+
+Build the image:
+```bash
+docker build -t task-tracker:dev .
+```
+
+Run the container:
+```bash
+docker run --rm -d -p 8000:8000 --name tt-dev task-tracker:dev
+```
+
+Verify it's up:
+```bash
+curl http://localhost:8000/health
+```
+
+The image is a multi-stage build on `python:3.11-slim` (see `Dockerfile`), runs as a non-root `app` user, and starts the API with `uvicorn app.main:app --host 0.0.0.0 --port 8000`.
+
 ## Verify
 
 ```bash
@@ -48,6 +67,10 @@ Swagger docs: open http://localhost:8000/docs in a browser.
 pytest -v
 ```
 Expect 28 passed.
+
+## CI
+
+`.github/workflows/ci.yml` runs on every push (any branch) and on pull requests targeting `main`. It checks out the repo, sets up a pinned Python 3.11, installs dependencies from `requirements.txt`, and runs `pytest -v`.
 
 ## Mid-course project docs
 See `docs/midcourse/` for user stories, the mini-ADR, the AI prompt log, verification evidence, and the reflection for this checkpoint.

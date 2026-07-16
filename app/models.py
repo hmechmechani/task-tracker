@@ -125,17 +125,17 @@ class TaskUpdate(BaseModel):
             value (object): Raw input value for title.
 
         Returns:
-            object: The stripped title string, or None unchanged if value
-                is None (title is optional on TaskUpdate, so None means
-                "no change requested" upstream via exclude_unset).
+            object: The stripped title string.
 
         Raises:
+            ValueError: If value is explicitly None (an explicit null is
+                rejected — to leave title unchanged on PATCH, omit the key
+                entirely rather than sending null), or if the stripped
+                value is blank, or exceeds 200 characters.
             TypeError: If value is not a string.
-            ValueError: If the stripped value is blank, or exceeds 200
-                characters.
         """
         if value is None:
-            return value
+            raise ValueError("title cannot be null")
         if not isinstance(value, str):
             raise TypeError("title must be a string")
 

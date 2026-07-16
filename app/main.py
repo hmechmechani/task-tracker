@@ -115,6 +115,9 @@ def update_task(task_id: str, payload: TaskUpdate) -> TaskResponse:
         HTTPException: 404 if the task does not exist at update time.
             [VERIFY] Whether this second check can trigger independently of
             the first, given the current single-request in-memory storage.
+        [VERIFY] FastAPI/Pydantic reject an invalid payload shape/value
+            (e.g. bad TaskUpdate fields) with 422 before this function
+            runs — not code in this function body.
 
     Example:
         PATCH /tasks/{task_id} {"status": "InProgress"}
