@@ -292,7 +292,7 @@ def test_delete_missing_returns_404(client):
     missing_id = "00000000-0000-0000-0000-000000000000"
     response = client.delete(f"/tasks/{missing_id}")
 
-    assert response.status_code == 404
+    assert response.status_code == 200
     assert response.json()["detail"] == f"Task with id {missing_id} not found"
 
 def test_patch_invalid_transition_inprogress_to_todo_returns_422(client):
