@@ -77,3 +77,44 @@ See `docs/midcourse/` for user stories, the mini-ADR, the AI prompt log, verific
 
 ## Technical decisions
 See `docs/decisions/in-memory-task-storage.md` for the decision note on using an in-memory dict as the task storage layer.
+
+## Final Project
+
+Branch reviewed: final-project
+
+### What this submission demonstrates
+- Existing Task Tracker app still runs inside the intended course scope.
+- CI runs the pytest suite on push and/or pull request.
+- Docker image builds and runs with /health returning 200.
+- AI review, security, and ownership evidence is in docs/.
+
+### How to run locally
+```bash
+python -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+API runs at `http://127.0.0.1:8000` (docs at `/docs`).
+
+### How to run tests
+```bash
+pytest -v
+```
+
+### How to run with Docker
+```bash
+docker build -t task-tracker:dev .
+docker run --rm -d -p 8000:8000 --name tt-dev task-tracker:dev
+curl http://localhost:8000/health
+```
+
+### Evidence files
+- docs/release-evidence.md
+- docs/final-ai-review.md
+- docs/ai-playbook.md
+
+### AI assistance summary
+AI helped draft or review: CI, Docker, docs, security, debugging.
+I verified the work by: tests, diff review, Docker /health checks, and manual scans.
+One AI suggestion I rejected or corrected: The original AI-assisted `TaskUpdate.title` validator in `app/models.py` silently returned `None` unchanged when a client sent `{"title": null}` in a PATCH request, even though `TaskResponse.title` requires a non-null string. A Module 4 documentation audit caught this contract violation; I corrected the validator to explicitly raise `ValueError("title cannot be null")`, added a regression test (`test_patch_title_null_returns_422`), and verified the fix with `pytest -v`.
