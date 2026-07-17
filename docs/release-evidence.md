@@ -13,7 +13,7 @@
 ## CI evidence
 
 - Workflow file: `.github/workflows/ci.yml`
-- Latest run link or note: [- Latest run link or note: https://github.com/hmechmechani/task-tracker/actions/runs/29586889222 (green, on final-project)]
+- Latest run link or note: https://github.com/hmechmechani/task-tracker/actions/runs/29586889222 (green, on final-project)]
 - Test command used by CI: `pytest -v`
 - Shortcut check: no `continue-on-error`, no `|| true`, pytest is not skipped, Python version is pinned to 3.11, dependencies are installed from `requirements.txt` before tests run.
 
