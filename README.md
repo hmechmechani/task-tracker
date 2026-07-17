@@ -66,7 +66,7 @@ Swagger docs: open http://localhost:8000/docs in a browser.
 ```bash
 pytest -v
 ```
-Expect 28 passed.
+Expect 29 passed.
 
 ## CI
 
