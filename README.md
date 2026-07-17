@@ -74,3 +74,6 @@ Expect 28 passed.
 
 ## Mid-course project docs
 See `docs/midcourse/` for user stories, the mini-ADR, the AI prompt log, verification evidence, and the reflection for this checkpoint.
+
+## Technical decisions
+See `docs/decisions/in-memory-task-storage.md` for the decision note on using an in-memory dict as the task storage layer.
