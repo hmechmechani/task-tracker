@@ -1,0 +1,9 @@
+# Module 4 Reflection: Tool-Fit Across Copilot, Cursor, and Claude Code
+
+I used Copilot Chat in VS Code for Module 3 — due dates, tags, the frontend work. It's good for small, scoped stuff. Give it one function or one file with a clear "don't touch anything else" and it stays in its lane. Where it broke down: one prompt snuck an unrequested frontend edit into what was supposed to be a backend-only change. Caught it before applying, but it's the kind of thing you have to watch for every time, not just once.
+
+Claude Code, in the terminal, is a bigger tool for a bigger job. It can read the whole repo, plan out a multi-step change, run commands, touch several files at once — which is basically what CI, Docker, and docs work requires. But that scope means more can go wrong quietly. A few times its narration said a file was written when it actually wasn't yet, or a diff looked applied but hadn't landed on disk. Running git status after every single claimed change caught this consistently — it wasn't optional. The best moment of the whole module was the documentation audit finding a real bug: a PATCH request could silently set a required field to null. That wasn't even what I asked it to check for. It found it by actually reading the code instead of trusting what the docstrings claimed.
+
+I haven't touched Cursor in this course, so I can't speak to it from experience. From how the module describes it, it sits in between: IDE-based like Copilot, but able to reason across more than one open file, without full terminal access. Probably a fit for refactors across a few related files.
+
+None of these three wins outright. Copilot for small, single-file edits you can eyeball line by line. Claude Code for the wider engineering work, but only if you're checking real output every step, not the chat summary of it. The thing that mattered most across both tools wasn't which one — it was refusing to trust what either one said it did until I'd looked myself.
