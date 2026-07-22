@@ -2,11 +2,11 @@
 
 ## 1. When I reach for AI first
 
-Using GitHub Copilot in VS Code — for in-editor coding help while actively writing code.
+I reach for AI first when a task is repetitive or mechanical enough that writing it from scratch would be slower than reviewing and correcting a draft — boilerplate CRUD routes, Docker/CI config scaffolding, a first-pass structure I can then check against the real repo.
 
 ## 2. When I do not reach for AI
 
-When Copilot suggested overriding code I didn't want changed, I rejected the suggestion and checked it myself instead of accepting it.
+I do not reach for AI when the decision is about business rules or product flow — for example, whether deleting a task should also delete its comments, or whether comments live nested under tasks or embedded in task responses. Those are calls I need to make myself, not something to accept from an AI's suggestion.
 
 ## 3. My non-negotiables
 
@@ -14,7 +14,7 @@ Always review an AI suggestion before applying it — never accept a change blin
 
 ## 4. My review rules
 
-Physically test something myself before accepting it as correct, rather than trusting an AI's explanation or claim on its own.
+Physically test something myself before accepting it as correct, rather than trusting an AI's explanation or claim on its own. This applies to my own claims too, not just AI's — during the final project, I told my instructor a file (`docs/final-ai-review.md`) had been saved when it hadn't actually been created yet. A plain `dir` check caught it immediately. "Verify before trusting" doesn't stop at AI output; it applies to my own untested assumptions about my own work.
 
 ## 5. What I am still figuring out
 
