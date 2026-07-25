@@ -40,6 +40,52 @@ Fix applied: changed all 4 `raise TypeError(...)` calls in `app/models.py` to `r
 
 This is the single strongest piece of evidence in this document that AI narration (including my own earlier write-up of this exact investigation) can be wrong, and that verifying against the live, running app — not just the code or a prior test result — is the only thing that actually catches it.
 
+### Second manual check: explicit-null corruption (found after further instructor feedback)
+
+A second round of instructor feedback reported that explicit `null` values were still accepted for
+`description`, `status`, `priority`, and `tags`, and that this could cause later requests to return
+HTTP 500. Rather than assume the report was complete, I reproduced it against the running app.
+
+What I found was worse than a simple validation gap. `PATCH /tasks/{id}` with `{"status": null}`
+returned **200**, not an error — the null was written straight into storage. The crash only appeared
+on the *next* request touching that task:
+
+```
+File "app/main.py", line 130, in update_task
+    validate_status_transition(existing.status, payload.status)
+File "app/business_rules.py", line 32, in validate_status_transition
+    detail=f"Invalid status transition from {current.value} to {new.value}..."
+AttributeError: 'NoneType' object has no attribute 'value'
+```
+
+Root cause, traced through the code rather than guessed: `TaskUpdate` only rejected an explicit null
+for `title`; the other four fields had no such check, and `_validate_tags` explicitly returned `None`
+unchanged. `app/storage.py`'s `update_task()` then merges the payload via
+`task.model_copy(update=...)` — and **`model_copy` does not re-validate**. So a null bypassed Pydantic
+entirely and was persisted into fields that `TaskResponse` declares as required and non-nullable.
+The corrupted task then broke whichever later request tried to read or transition it.
+
+Why the test suite missed it: all 31 tests at that point sent either valid values or wrong *types* —
+none sent an explicit `null` for these four fields, so the path was never exercised.
+
+Change made to `app/` (explained here per the project ground rules): added explicit null-rejecting
+`mode="before"` validators for `description`, `status`, and `priority` on `TaskUpdate`, and changed
+`_validate_tags` to raise `ValueError("tags cannot be null")` instead of returning `None`.
+`assignee` and `due_date` were deliberately left nullable — they are `Optional` on `TaskResponse` too,
+so clearing them is legitimate behavior, not corruption. Four regression tests were added, two of
+which assert not just the 422 but that the stored task is *still readable and unchanged* afterward —
+because the original bug's real damage was the corrupted state, not the response code.
+
+Verified live after the fix: all four fields return 422 with a clear message, a follow-up status
+transition succeeds instead of crashing, legitimate updates still work, and the full suite passes at
+35/35.
+
+The lesson I take from this one: the first fix I made in this area (`TypeError` → `ValueError`) was
+correct but I stopped at the symptom the grader named instead of asking what *else* shared that shape.
+A null is not a wrong type, so my earlier regression tests sailed past it. Checking the whole class of
+input, not just the reported instance, is what would have caught both in one pass.
+
+
 ## One AI output I rejected or corrected
 
 The original AI-assisted `TaskUpdate.title` validator in `app/models.py` silently returned `None` unchanged when a client sent `{"title": null}` in a PATCH request, even though `TaskResponse.title` requires a non-null string — a real contract violation. A Module 4 documentation audit caught this by testing the actual endpoint behavior against the documented contract, not by trusting the AI-generated docstring. I corrected the validator to explicitly `raise ValueError("title cannot be null")`, added a regression test (`test_patch_title_null_returns_422`), and verified the fix with `pytest -v` (29/29 passing).
@@ -52,4 +98,4 @@ The original AI-assisted `TaskUpdate.title` validator in `app/models.py` silentl
 
 ## Ownership statement
 
-I'm comfortable submitting this repo because every claim in it traces back to something I actually ran, read, or tested — not something an AI tool told me was true. Across this course I caught and corrected a real validation bug that let `null` titles bypass a required-field contract, caught a stale test count in the README before it could compound, caught my own AGENTS.md file never actually being committed, and found a genuine crash-vs-graceful-error distinction in Pydantic validator behavior by testing it myself rather than accepting an explanation. Where AI proposed findings — security audits, code reviews, architecture docs — I graded each one against real file evidence rather than accepting them at face value, and I can explain why each graded decision was made. The parts of this repo I'm least confident about, like Docker internals, are explicitly named as such in my playbook rather than glossed over.
+I'm comfortable submitting this repo because every claim in it traces back to something I actually ran, read, or tested — not something an AI tool told me was true. Across this course I caught and corrected a real validation bug that let `null` titles bypass a required-field contract, caught a stale test count in the README before it could compound, caught my own AGENTS.md file never actually being committed, found a genuine crash-vs-graceful-error distinction in Pydantic validator behavior by testing it myself rather than accepting an explanation, and traced a state-corruption bug where an update that looked successful silently persisted invalid data and crashed the next request instead. Where AI proposed findings — security audits, code reviews, architecture docs — I graded each one against real file evidence rather than accepting them at face value, and I can explain why each graded decision was made. The parts of this repo I'm least confident about, like Docker internals, are explicitly named as such in my playbook rather than glossed over.
