@@ -9,14 +9,14 @@ def _validate_tags(value: object) -> object:
     if value is None:
         return value
     if not isinstance(value, list):
-        raise TypeError("tags must be a list of strings")
+        raise ValueError("tags must be a list of strings")
     if len(value) > 5:
         raise ValueError("tags must contain at most 5 tags")
 
     cleaned_tags = []
     for tag in value:
         if not isinstance(tag, str):
-            raise TypeError("tags must be a list of strings")
+            raise ValueError("tags must be a list of strings")
 
         cleaned_tag = tag.strip()
         if not cleaned_tag:
@@ -67,14 +67,13 @@ class TaskCreate(BaseModel):
                 this validator.
 
         Raises:
-            TypeError: If value is not a string.
-            ValueError: If the stripped value is blank, or exceeds 200
-                characters.
+            ValueError: If value is not a string, if the stripped value
+                is blank, or if it exceeds 200 characters.
         """
         if value is None:
             return value
         if not isinstance(value, str):
-            raise TypeError("title must be a string")
+            raise ValueError("title must be a string")
 
         cleaned_value = value.strip()
         if not cleaned_value:
@@ -98,9 +97,9 @@ class TaskCreate(BaseModel):
                 tag strings.
 
         Raises:
-            TypeError: If value is not a list of strings.
-            ValueError: If more than 5 tags are given, any tag is blank
-                after trimming, or any tag exceeds 30 characters.
+            ValueError: If value is not a list of strings, if more than
+                5 tags are given, if any tag is blank after trimming, or
+                if any tag exceeds 30 characters.
         """
         return _validate_tags(value)
 
@@ -130,14 +129,14 @@ class TaskUpdate(BaseModel):
         Raises:
             ValueError: If value is explicitly None (an explicit null is
                 rejected — to leave title unchanged on PATCH, omit the key
-                entirely rather than sending null), or if the stripped
-                value is blank, or exceeds 200 characters.
-            TypeError: If value is not a string.
+                entirely rather than sending null), if value is not a
+                string, if the stripped value is blank, or if it exceeds
+                200 characters.
         """
         if value is None:
             raise ValueError("title cannot be null")
         if not isinstance(value, str):
-            raise TypeError("title must be a string")
+            raise ValueError("title must be a string")
 
         cleaned_value = value.strip()
         if not cleaned_value:
@@ -161,9 +160,9 @@ class TaskUpdate(BaseModel):
                 tag strings.
 
         Raises:
-            TypeError: If value is not a list of strings.
-            ValueError: If more than 5 tags are given, any tag is blank
-                after trimming, or any tag exceeds 30 characters.
+            ValueError: If value is not a list of strings, if more than
+                5 tags are given, if any tag is blank after trimming, or
+                if any tag exceeds 30 characters.
         """
         return _validate_tags(value)
 

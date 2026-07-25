@@ -88,6 +88,18 @@ def test_create_task_with_empty_tag_returns_422(client):
     assert response.status_code == 422
 
 
+def test_create_task_non_string_title_returns_422(client):
+    response = client.post("/tasks", json={"title": 123, "tags": ["ok"]})
+
+    assert response.status_code == 422
+
+
+def test_create_task_non_list_tags_returns_422(client):
+    response = client.post("/tasks", json={"title": "test", "tags": "urgent"})
+
+    assert response.status_code == 422
+
+
 def test_list_tasks_filter_by_tag_returns_only_matches(client):
     client.post("/tasks", json={"title": "Urgent task", "tags": ["urgent"]})
     client.post("/tasks", json={"title": "Also urgent", "tags": ["review", "urgent"]})
