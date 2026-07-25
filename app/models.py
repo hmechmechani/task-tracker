@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 def _validate_tags(value: object) -> object:
     if value is None:
-        return value
+        raise ValueError("tags cannot be null")
     if not isinstance(value, list):
         raise ValueError("tags must be a list of strings")
     if len(value) > 5:
@@ -93,13 +93,13 @@ class TaskCreate(BaseModel):
             value (object): Raw input value for tags.
 
         Returns:
-            object: value unchanged if None, otherwise a list of trimmed
-                tag strings.
+            object: A list of trimmed tag strings.
 
         Raises:
-            ValueError: If value is not a list of strings, if more than
-                5 tags are given, if any tag is blank after trimming, or
-                if any tag exceeds 30 characters.
+            ValueError: If value is explicitly None, if value is not a
+                list of strings, if more than 5 tags are given, if any
+                tag is blank after trimming, or if any tag exceeds 30
+                characters.
         """
         return _validate_tags(value)
 
@@ -145,24 +145,90 @@ class TaskUpdate(BaseModel):
             raise ValueError("title must be 200 characters or fewer")
         return cleaned_value
 
+    @field_validator("description", mode="before")
+    @classmethod
+    def validate_description(cls, value: object) -> object:
+        """Reject an explicit null for description before model construction.
+
+        Args:
+            value (object): Raw input value for description.
+
+        Returns:
+            object: value unchanged, when not None.
+
+        Raises:
+            ValueError: If value is explicitly None (an explicit null is
+                rejected — to leave description unchanged on PATCH, omit
+                the key entirely rather than sending null; TaskResponse's
+                description field is a required, non-null string).
+        """
+        if value is None:
+            raise ValueError("description cannot be null")
+        return value
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def validate_status(cls, value: object) -> object:
+        """Reject an explicit null for status before model construction.
+
+        Args:
+            value (object): Raw input value for status.
+
+        Returns:
+            object: value unchanged, when not None.
+
+        Raises:
+            ValueError: If value is explicitly None (an explicit null is
+                rejected — to leave status unchanged on PATCH, omit the
+                key entirely rather than sending null; TaskResponse's
+                status field is required and non-null).
+        """
+        if value is None:
+            raise ValueError("status cannot be null")
+        return value
+
+    @field_validator("priority", mode="before")
+    @classmethod
+    def validate_priority(cls, value: object) -> object:
+        """Reject an explicit null for priority before model construction.
+
+        Args:
+            value (object): Raw input value for priority.
+
+        Returns:
+            object: value unchanged, when not None.
+
+        Raises:
+            ValueError: If value is explicitly None (an explicit null is
+                rejected — to leave priority unchanged on PATCH, omit the
+                key entirely rather than sending null; TaskResponse's
+                priority field is required and non-null).
+        """
+        if value is None:
+            raise ValueError("priority cannot be null")
+        return value
+
     @field_validator("tags", mode="before")
     @classmethod
     def validate_tags(cls, value: object) -> object:
         """Normalize and validate the tags field before model construction.
 
-        Delegates to the module-level _validate_tags helper.
+        Delegates to the module-level _validate_tags helper, which rejects
+        an explicit null (to leave tags unchanged on PATCH, omit the key
+        entirely rather than sending null; TaskResponse's tags field is a
+        required, non-null list).
 
         Args:
             value (object): Raw input value for tags.
 
         Returns:
-            object: value unchanged if None, otherwise a list of trimmed
-                tag strings.
+            object: A list of trimmed tag strings.
 
         Raises:
-            ValueError: If value is not a list of strings, if more than
-                5 tags are given, if any tag is blank after trimming, or
-                if any tag exceeds 30 characters.
+            ValueError: If value is explicitly None, if value is not a
+                list of strings, if more than 5 tags are given, if any
+                tag is blank after trimming, or if any tag exceeds 30
+                characters.
         """
         return _validate_tags(value)
 

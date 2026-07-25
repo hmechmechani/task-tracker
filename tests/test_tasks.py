@@ -333,3 +333,46 @@ def test_patch_invalid_transition_inprogress_to_todo_returns_422(client):
     )
     assert response.status_code == 422
     assert "Invalid status transition" in response.json()["detail"]
+
+def test_patch_description_null_returns_422(client, created_task):
+    response = client.patch(
+        f"/tasks/{created_task['id']}",
+        json={"description": None},
+    )
+
+    assert response.status_code == 422
+
+
+def test_patch_priority_null_returns_422(client, created_task):
+    response = client.patch(
+        f"/tasks/{created_task['id']}",
+        json={"priority": None},
+    )
+
+    assert response.status_code == 422
+
+
+def test_patch_status_null_returns_422_and_does_not_corrupt_task(client, created_task):
+    response = client.patch(
+        f"/tasks/{created_task['id']}",
+        json={"status": None},
+    )
+    assert response.status_code == 422
+
+    # A rejected update must not leave the stored task corrupted in a way
+    # that breaks a later request.
+    follow_up = client.get(f"/tasks/{created_task['id']}")
+    assert follow_up.status_code == 200
+    assert follow_up.json()["status"] == created_task["status"]
+
+
+def test_patch_tags_null_returns_422_and_does_not_corrupt_task(client, created_task):
+    response = client.patch(
+        f"/tasks/{created_task['id']}",
+        json={"tags": None},
+    )
+    assert response.status_code == 422
+
+    follow_up = client.get(f"/tasks/{created_task['id']}")
+    assert follow_up.status_code == 200
+    assert follow_up.json()["tags"] == created_task["tags"]
